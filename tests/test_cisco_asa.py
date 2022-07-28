@@ -4,20 +4,20 @@ import unittest
 
 import yaml
 
-import netdev
+import asynchronet
 
-logging.basicConfig(filename='unittest.log', level=logging.DEBUG)
-config_path = 'config.yaml'
+logging.basicConfig(filename="unittest.log", level=logging.DEBUG)
+config_path = "config.yaml"
 
 
 class TestASA(unittest.TestCase):
     @staticmethod
     def load_credits():
-        with open(config_path, 'r') as conf:
+        with open(config_path, "r") as conf:
             config = yaml.safe_load(conf)
-            with open(config['device_list'], 'r') as devs:
+            with open(config["device_list"], "r") as devs:
                 devices = yaml.safe_load(devs)
-                params = [p for p in devices if p['device_type'] == 'cisco_asa']
+                params = [p for p in devices if p["device_type"] == "cisco_asa"]
                 return params
 
     def setUp(self):
@@ -30,8 +30,8 @@ class TestASA(unittest.TestCase):
     def test_show_run_hostname(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as asa:
-                    out = await asa.send_command('show run | i hostname')
+                async with asynchronet.create(**dev) as asa:
+                    out = await asa.send_command("show run | i hostname")
                     self.assertIn("hostname", out)
 
         self.loop.run_until_complete(task())
@@ -39,16 +39,16 @@ class TestASA(unittest.TestCase):
     def test_timeout(self):
         async def task():
             for dev in self.devices:
-                with self.assertRaises(netdev.TimeoutError):
-                    async with netdev.create(**dev, timeout=0.1) as asa:
-                        await asa.send_command('show run | i hostname')
+                with self.assertRaises(asynchronet.TimeoutError):
+                    async with asynchronet.create(**dev, timeout=0.1) as asa:
+                        await asa.send_command("show run | i hostname")
 
         self.loop.run_until_complete(task())
 
     def test_show_several_commands(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as asa:
+                async with asynchronet.create(**dev) as asa:
                     commands = ["show ver", "show run", "show ssh"]
                     for cmd in commands:
                         out = await asa.send_command(cmd, strip_command=False)
@@ -59,7 +59,7 @@ class TestASA(unittest.TestCase):
     def test_config_set(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as asa:
+                async with asynchronet.create(**dev) as asa:
                     commands = ["interface Management0/0", "exit"]
                     out = await asa.send_config_set(commands)
                     self.assertIn("interface Management0/0", out)
@@ -70,10 +70,16 @@ class TestASA(unittest.TestCase):
     def test_interactive_commands(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as asa:
-                    out = await asa.send_command("copy r scp:", pattern=r'\[running-config\]\?', strip_command=False)
-                    out += await asa.send_command("\n", pattern=r'\[\]\?', strip_command=False)
+                async with asynchronet.create(**dev) as asa:
+                    out = await asa.send_command(
+                        "copy r scp:",
+                        pattern=r"\[running-config\]\?",
+                        strip_command=False,
+                    )
+                    out += await asa.send_command(
+                        "\n", pattern=r"\[\]\?", strip_command=False
+                    )
                     out += await asa.send_command("\n", strip_command=False)
-                    self.assertIn('%Error', out)
+                    self.assertIn("%Error", out)
 
         self.loop.run_until_complete(task())

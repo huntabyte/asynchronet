@@ -3,16 +3,16 @@ import logging
 
 import yaml
 
-import netdev
+import asynchronet
 
-config_path = 'config.yaml'
+config_path = "config.yaml"
 
 logging.basicConfig(level=logging.INFO)
-netdev.logger.setLevel(logging.DEBUG)
+asynchronet.logger.setLevel(logging.DEBUG)
 
 
 async def task(param):
-    async with netdev.create(**param) as ios:
+    async with asynchronet.create(**param) as ios:
         # Testing sending simple command
         out = await ios.send_command("show ver")
         print(out)
@@ -26,9 +26,9 @@ async def task(param):
 
 
 async def run():
-    config = yaml.safe_load(open(config_path, 'r'))
-    devices = yaml.safe_load(open(config['device_list'], 'r'))
-    tasks = [task(dev) for dev in devices if dev['device_type'] == 'aruba_aos_6']
+    config = yaml.safe_load(open(config_path, "r"))
+    devices = yaml.safe_load(open(config["device_list"], "r"))
+    tasks = [task(dev) for dev in devices if dev["device_type"] == "aruba_aos_6"]
     await asyncio.wait(tasks)
 
 

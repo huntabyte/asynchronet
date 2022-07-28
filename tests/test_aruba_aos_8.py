@@ -4,20 +4,20 @@ import unittest
 
 import yaml
 
-import netdev
+import asynchronet
 
-logging.basicConfig(filename='unittest.log', level=logging.DEBUG)
-config_path = 'config.yaml'
+logging.basicConfig(filename="unittest.log", level=logging.DEBUG)
+config_path = "config.yaml"
 
 
 class TestAOS8(unittest.TestCase):
     @staticmethod
     def load_credits():
-        with open(config_path, 'r') as conf:
+        with open(config_path, "r") as conf:
             config = yaml.safe_load(conf)
-            with open(config['device_list'], 'r') as devs:
+            with open(config["device_list"], "r") as devs:
                 devices = yaml.safe_load(devs)
-                params = [p for p in devices if p['device_type'] == 'aruba_aos_8']
+                params = [p for p in devices if p["device_type"] == "aruba_aos_8"]
                 return params
 
     def setUp(self):
@@ -30,8 +30,8 @@ class TestAOS8(unittest.TestCase):
     def test_show_run_hostname(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as aos:
-                    out = await aos.send_command('show run | i hostname')
+                async with asynchronet.create(**dev) as aos:
+                    out = await aos.send_command("show run | i hostname")
                     self.assertIn("hostname", out)
 
         self.loop.run_until_complete(task())
@@ -39,7 +39,7 @@ class TestAOS8(unittest.TestCase):
     def test_show_several_commands(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as aos:
+                async with asynchronet.create(**dev) as aos:
                     commands = ["dir", "show ver", "show run", "show ssh"]
                     for cmd in commands:
                         out = await aos.send_command(cmd, strip_command=False)
@@ -50,7 +50,7 @@ class TestAOS8(unittest.TestCase):
     def test_config_set(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as aos:
+                async with asynchronet.create(**dev) as aos:
                     commands = ["interface loopback", "exit"]
                     out = await aos.send_config_set(commands)
                     self.assertIn("loopback", out)
@@ -61,8 +61,8 @@ class TestAOS8(unittest.TestCase):
     def test_base_prompt(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as aos:
-                    out = await aos.send_command('sh run | i hostname')
+                async with asynchronet.create(**dev) as aos:
+                    out = await aos.send_command("sh run | i hostname")
                     self.assertIn(aos.base_prompt, out)
 
         self.loop.run_until_complete(task())
@@ -70,8 +70,8 @@ class TestAOS8(unittest.TestCase):
     def test_timeout(self):
         async def task():
             for dev in self.devices:
-                with self.assertRaises(netdev.TimeoutError):
-                    async with netdev.create(**dev, timeout=0.1) as aos:
-                        await aos.send_command('sh run | i hostname')
+                with self.assertRaises(asynchronet.TimeoutError):
+                    async with asynchronet.create(**dev, timeout=0.1) as aos:
+                        await aos.send_command("sh run | i hostname")
 
         self.loop.run_until_complete(task())

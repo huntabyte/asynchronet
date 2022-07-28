@@ -4,20 +4,20 @@ import unittest
 
 import yaml
 
-import netdev
+import asynchronet
 
-logging.basicConfig(filename='unittest.log', level=logging.DEBUG)
-config_path = 'config.yaml'
+logging.basicConfig(filename="unittest.log", level=logging.DEBUG)
+config_path = "config.yaml"
 
 
 class TestIOSSG3XX(unittest.TestCase):
     @staticmethod
     def load_credits():
-        with open(config_path, 'r') as conf:
+        with open(config_path, "r") as conf:
             config = yaml.safe_load(conf)
-            with open(config['device_list'], 'r') as devs:
+            with open(config["device_list"], "r") as devs:
                 devices = yaml.safe_load(devs)
-                params = [p for p in devices if p['device_type'] == 'cisco_sg3xx']
+                params = [p for p in devices if p["device_type"] == "cisco_sg3xx"]
                 return params
 
     def setUp(self):
@@ -30,8 +30,8 @@ class TestIOSSG3XX(unittest.TestCase):
     def test_show_run_hostname(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as ios:
-                    out = await ios.send_command('show run | i hostname')
+                async with asynchronet.create(**dev) as ios:
+                    out = await ios.send_command("show run | i hostname")
                     self.assertIn("hostname", out)
 
         self.loop.run_until_complete(task())
@@ -39,16 +39,16 @@ class TestIOSSG3XX(unittest.TestCase):
     def test_timeout(self):
         async def task():
             for dev in self.devices:
-                with self.assertRaises(netdev.TimeoutError):
-                    async with netdev.create(**dev, timeout=0.1) as ios:
-                        await ios.send_command('show run | i hostname')
+                with self.assertRaises(asynchronet.TimeoutError):
+                    async with asynchronet.create(**dev, timeout=0.1) as ios:
+                        await ios.send_command("show run | i hostname")
 
         self.loop.run_until_complete(task())
 
     def test_show_several_commands(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as ios:
+                async with asynchronet.create(**dev) as ios:
                     commands = ["dir", "show ver", "show run", "show ssh"]
                     for cmd in commands:
                         out = await ios.send_command(cmd, strip_command=False)
@@ -59,7 +59,7 @@ class TestIOSSG3XX(unittest.TestCase):
     def test_config_set(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as ios:
+                async with asynchronet.create(**dev) as ios:
                     commands = ["line con", "exit"]
                     out = await ios.send_config_set(commands)
                     self.assertIn("line con", out)
@@ -70,8 +70,8 @@ class TestIOSSG3XX(unittest.TestCase):
     def test_base_prompt(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as ios:
-                    out = await ios.send_command('sh run | i hostname')
+                async with asynchronet.create(**dev) as ios:
+                    out = await ios.send_command("sh run | i hostname")
                     self.assertIn(ios.base_prompt, out)
 
         self.loop.run_until_complete(task())
@@ -79,10 +79,12 @@ class TestIOSSG3XX(unittest.TestCase):
     def test_interactive_commands(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as ios:
-                    out = await ios.send_command("conf", pattern=r'\[terminal\]\?', strip_command=False)
+                async with asynchronet.create(**dev) as ios:
+                    out = await ios.send_command(
+                        "conf", pattern=r"\[terminal\]\?", strip_command=False
+                    )
                     out += await ios.send_command("term", strip_command=False)
                     out += await ios.send_command("exit", strip_command=False)
-                    self.assertIn('Enter configuration commands', out)
+                    self.assertIn("Enter configuration commands", out)
 
         self.loop.run_until_complete(task())

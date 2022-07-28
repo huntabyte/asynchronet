@@ -4,20 +4,20 @@ import unittest
 
 import yaml
 
-import netdev
+import asynchronet
 
-logging.basicConfig(filename='unittest.log', level=logging.DEBUG)
-config_path = 'config.yaml'
+logging.basicConfig(filename="unittest.log", level=logging.DEBUG)
+config_path = "config.yaml"
 
 
 class TestHuawei(unittest.TestCase):
     @staticmethod
     def load_credits():
-        with open(config_path, 'r') as conf:
+        with open(config_path, "r") as conf:
             config = yaml.safe_load(conf)
-            with open(config['device_list'], 'r') as devs:
+            with open(config["device_list"], "r") as devs:
                 devices = yaml.safe_load(devs)
-                params = [p for p in devices if p['device_type'] == 'huawei']
+                params = [p for p in devices if p["device_type"] == "huawei"]
                 return params
 
     def setUp(self):
@@ -30,8 +30,8 @@ class TestHuawei(unittest.TestCase):
     def test_show_sysname(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as huawei:
-                    out = await huawei.send_command('display cur | i sysname')
+                async with asynchronet.create(**dev) as huawei:
+                    out = await huawei.send_command("display cur | i sysname")
                     self.assertIn("sysname", out)
 
         self.loop.run_until_complete(task())
@@ -39,7 +39,7 @@ class TestHuawei(unittest.TestCase):
     def test_show_several_commands(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as huawei:
+                async with asynchronet.create(**dev) as huawei:
                     commands = ["dir", "display ver", "display cur"]
                     for cmd in commands:
                         out = await huawei.send_command(cmd, strip_command=False)
@@ -50,7 +50,7 @@ class TestHuawei(unittest.TestCase):
     def test_config_set(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as huawei:
+                async with asynchronet.create(**dev) as huawei:
                     commands = ["vlan 1", "quit"]
                     out = await huawei.send_config_set(commands)
                     self.assertIn("vlan 1", out)
@@ -61,8 +61,8 @@ class TestHuawei(unittest.TestCase):
     def test_base_prompt(self):
         async def task():
             for dev in self.devices:
-                async with netdev.create(**dev) as huawei:
-                    out = await huawei.send_command('display cur | i sysname')
+                async with asynchronet.create(**dev) as huawei:
+                    out = await huawei.send_command("display cur | i sysname")
                     self.assertIn(huawei.base_prompt, out)
 
         self.loop.run_until_complete(task())
@@ -70,8 +70,8 @@ class TestHuawei(unittest.TestCase):
     def test_timeout(self):
         async def task():
             for dev in self.devices:
-                with self.assertRaises(netdev.TimeoutError):
-                    async with netdev.create(**dev, timeout=0.1) as huawei:
-                        await huawei.send_command('display cur | i sysname')
+                with self.assertRaises(asynchronet.TimeoutError):
+                    async with asynchronet.create(**dev, timeout=0.1) as huawei:
+                        await huawei.send_command("display cur | i sysname")
 
         self.loop.run_until_complete(task())

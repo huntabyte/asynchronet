@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
 # Import Python library
-import asyncio, netdev
+import asyncio, asynchronet
 
 # Coroutine used for the tasks
 async def task(param):
 
     # Create an object for the devices and open SSH connections
-    async with netdev.create(**param) as device:
+    async with asynchronet.create(**param) as device:
 
         # Testing sending simple command
-        
+
         # Command to send
         cmd = "show system"
 
@@ -39,29 +39,30 @@ async def task(param):
 async def main():
 
     # Parameters of the network device
-    my_device = {   'username' : 'LOGIN',
-                    'password' : 'PASSWORD',
-                    'host': 'IP_ADDRESS',
-                    'device_type': 'alcatel_aos',
+    my_device = {
+        "username": "LOGIN",
+        "password": "PASSWORD",
+        "host": "IP_ADDRESS",
+        "device_type": "alcatel_aos",
     }
 
     # List of devices
     devices = [my_device]
-    
+
     # List of tasks
     my_tasks = [task(dev) for dev in devices]
-    
+
     # Starting the coroutine of the tasks
     await asyncio.wait(my_tasks)
 
 
 # Main function call
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # Run the main coroutine
     asyncio.run(main())
 
-    '''
+    """
     Result:
     ********************************************************************************
     System:
@@ -87,4 +88,5 @@ if __name__ == '__main__':
 
     ********************************************************************************
 
-    '''
+    """
+

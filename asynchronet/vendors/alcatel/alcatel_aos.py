@@ -1,3 +1,4 @@
+from typing import Any
 from asynchronet.vendors.base import BaseDevice
 from asynchronet.logger import logger
 import asyncio
@@ -7,10 +8,13 @@ import re
 class AlcatelAOS(BaseDevice):
     """Class for working with Alcatel AOS"""
 
-    async def _read_until_prompt_or_pattern(self, pattern="", re_flags=0):
-        """Read until either self.base_pattern or pattern is detected. Return ALL data available"""
+    async def _read_until_prompt_or_pattern(self, pattern="", re_flags=0) -> Any:
+        """
+        Read until either self.base_pattern or pattern is detected.
+        Return ALL data availables
+        """
         output = ""
-        logger.info("Host {}: Reading until prompt or pattern".format(self._host))
+        logger.info(f"Host {self._host}: Reading until prompt or pattern")
         if not pattern:
             pattern = self._base_pattern
         base_prompt_pattern = self._base_pattern
@@ -24,8 +28,7 @@ class AlcatelAOS(BaseDevice):
                 "\n" + base_prompt_pattern, output, flags=re_flags
             ):
                 logger.debug(
-                    "Host {}: Reading pattern '{}' or '{}' was found: {}".format(
-                        self._host, pattern, base_prompt_pattern, repr(output)
-                    )
+                    f"Host {self._host}: Reading pattern '{pattern}'"
+                    f"or '{base_prompt_pattern}' was found: {repr(output)}"
                 )
                 return output

@@ -19,9 +19,11 @@ class MikrotikRouterOS(BaseDevice):
         :param str password: user password for logging to device
         :param int port: ssh port for connection. Default is 22
         :param str device_type: network device type
-        :param known_hosts: file with known hosts. Default is None (no policy). With () it will use default file
+        :param known_hosts: file with known hosts. Default is None (no policy).
+            With () it will use default file
         :param str local_addr: local address for binding source of tcp connection
-        :param client_keys: path for client keys. Default in None. With () it will use default file in OS
+        :param client_keys: path for client keys. Default in None.
+            With () it will use default file in OS
         :param str passphrase: password for encrypted client keys
         :param float timeout: timeout in second for getting information from channel
         :param loop: asyncio loop object
@@ -49,16 +51,14 @@ class MikrotikRouterOS(BaseDevice):
         * _establish_connection() for connecting to device
         * _set_base_prompt() for finding and setting device prompt
         """
-        logger.info("Host {}: Connecting to device".format(self._host))
+        logger.info(f"Host {self._host}: Connecting to device")
         await self._establish_connection()
         await self._set_base_prompt()
-        logger.info("Host {}: Connected to device".format(self._host))
+        logger.info(f"Host {self._host}: Connected to device")
 
     async def _establish_connection(self):
         """Establish SSH connection to the network device"""
-        logger.info(
-            "Host {}: Establishing connection to port {}".format(self._host, self._port)
-        )
+        logger.info(f"Host {self._host}: Establishing connection to port {self._port}")
         output = ""
         # initiate SSH connection
         fut = asyncssh.connect(**self._connect_params_dict)
@@ -71,23 +71,21 @@ class MikrotikRouterOS(BaseDevice):
         self._stdin, self._stdout, self._stderr = await self._conn.open_session(
             term_type="Dumb"
         )
-        logger.info("Host {}: Connection is established".format(self._host))
+        logger.info(f"Host {self._host}: Connection is established")
         # Flush unnecessary data
         output = await self._read_until_prompt()
-        logger.debug(
-            "Host {}: Establish Connection Output: {}".format(self._host, repr(output))
-        )
+        logger.debug(f"Host {self._host}: Establish Connection Output: {repr(output)}")
         return output
 
     async def _set_base_prompt(self):
         """
         Setting two important vars
         * base_prompt - textual prompt in CLI (usually hostname)
-        * base_pattern - regexp for finding the end of command. IT's platform specific parameter
+        * base_pattern - regexp for finding the end of command. (platform-specific)
 
         For Mikrotik devices base_pattern is "r"\[.*?\] (\/.*?)?\>"
         """
-        logger.info("Host {}: Setting base prompt".format(self._host))
+        logger.info(f"Host {self._host}: Setting base prompt")
         self._base_pattern = type(self)._pattern
         prompt = await self._find_prompt()
         # Strip off trailing terminator
@@ -95,13 +93,13 @@ class MikrotikRouterOS(BaseDevice):
         if "@" in prompt:
             prompt = prompt.split("@")[1]
         self._base_prompt = prompt
-        logger.debug("Host {}: Base Prompt: {}".format(self._host, self._base_prompt))
-        logger.debug("Host {}: Base Pattern: {}".format(self._host, self._base_pattern))
+        logger.debug(f"Host {self._host}: Base Prompt: {self._base_prompt}")
+        logger.debug(f"Host {self._host}: Base Pattern: {self._base_pattern}")
         return self._base_prompt
 
     async def _find_prompt(self):
         """Finds the current network device prompt, last line only."""
-        logger.info("Host {}: Finding prompt".format(self._host))
+        logger.info(f"Host {self._host}: Finding prompt")
         self._stdin.write("\r")
         prompt = ""
         prompt = await self._read_until_prompt()
@@ -109,8 +107,8 @@ class MikrotikRouterOS(BaseDevice):
         if self._ansi_escape_codes:
             prompt = self._strip_ansi_escape_codes(prompt)
         if not prompt:
-            raise ValueError("Unable to find prompt: {0}".format(prompt))
-        logger.debug("Host {}: Prompt: {}".format(self._host, prompt))
+            raise ValueError(f"Unable to find prompt: {prompt}")
+        logger.debug(f"Host {self._host}: Prompt: {prompt}")
         return prompt
 
     @staticmethod

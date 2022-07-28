@@ -1,5 +1,5 @@
 class DisconnectError(Exception):
-    """AsyncSSH Disconnect Error with ip address"""
+    """AsyncSSH Disconnect Error with IP address"""
 
     def __init__(self, ip_address, code, reason):
         self.ip_address = ip_address
@@ -10,7 +10,7 @@ class DisconnectError(Exception):
 
 
 class TimeoutError(Exception):
-    """concurrent.futures._base.TimeoutError with ip address"""
+    """concurrent.futures._base.TimeoutError with IP address"""
 
     def __init__(self, ip_address):
         self.ip_address = ip_address
@@ -19,7 +19,7 @@ class TimeoutError(Exception):
 
 
 class CommitError(Exception):
-    """concurrent.futures._base.TimeoutError with ip address"""
+    """concurrent.futures._base.TimeoutError with IP address"""
 
     def __init__(self, ip_address, reason):
         self.ip_address = ip_address

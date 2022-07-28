@@ -1,7 +1,7 @@
 """
-ComwareLikeDevice Class is abstract class for using in HP Comware like devices
+ComwareLikeDevice Class is abstract class for Comware-like devices
 
-Connection Method are based upon AsyncSSH and should be running in asyncio loop
+Connection Methods are based on AsyncSSH and should be run in an asyncio loop
 """
 
 import re
@@ -20,36 +20,36 @@ class ComwareLikeDevice(BaseDevice):
     * system view. This mode is using for configuration system
     """
 
+    # These characters will stop reading from buffer.(the end of the device prompt)
     _delimiter_list = [">", "]"]
-    """All this characters will stop reading from buffer. It mean the end of device prompt"""
 
+    # Beginning prompt characters. Prompt must contain these
     _delimiter_left_list = ["<", "["]
-    """Begging prompt characters. Prompt must contain it"""
 
+    # Pattern to use when reading buffer. When found, processing ends.
     _pattern = r"[{delimiter_left}]{prompt}[\-\w]*[{delimiter_right}]"
-    """Pattern for using in reading buffer. When it found processing ends"""
 
+    # Command to disable paging
     _disable_paging_command = "screen-length disable"
-    """Command for disabling paging"""
 
+    # Command to enter system view
     _system_view_enter = "system-view"
-    """Command for entering to system view"""
 
+    # Command to return from system view to user view
     _system_view_exit = "return"
-    """Command for existing from system view to user view"""
 
+    # Check string in prompt. If it exists - we're in system view
     _system_view_check = "]"
-    """Checking string in prompt. If it's exist im prompt - we are in system view"""
 
     async def _set_base_prompt(self):
         """
         Setting two important vars
             base_prompt - textual prompt in CLI (usually hostname)
-            base_pattern - regexp for finding the end of command. IT's platform specific parameter
+            base_pattern - regexp for finding the end of command. (platform-specific)
 
         For Comware devices base_pattern is "[\]|>]prompt(\-\w+)?[\]|>]
         """
-        logger.info("Host {}: Setting base prompt".format(self._host))
+        logger.info(f"Host {self._host}: Setting base prompt")
         prompt = await self._find_prompt()
         # Strip off trailing terminator
         self._base_prompt = prompt[1:-1]
@@ -64,13 +64,13 @@ class ComwareLikeDevice(BaseDevice):
             prompt=base_prompt,
             delimiter_right=delimiter_right,
         )
-        logger.debug("Host {}: Base Prompt: {}".format(self._host, self._base_prompt))
-        logger.debug("Host {}: Base Pattern: {}".format(self._host, self._base_pattern))
+        logger.debug(f"Host {self._host}: Base Prompt: {self._base_prompt}")
+        logger.debug(f"Host {self._host}: Base Pattern: {self._base_pattern}")
         return self._base_prompt
 
     async def _check_system_view(self):
         """Check if we are in system view. Return boolean"""
-        logger.info("Host {}: Checking system view".format(self._host))
+        logger.info(f"Host {self._host}: Checking system view")
         check_string = type(self)._system_view_check
         self._stdin.write(self._normalize_cmd("\n"))
         output = await self._read_until_prompt()
@@ -78,7 +78,7 @@ class ComwareLikeDevice(BaseDevice):
 
     async def _system_view(self):
         """Enter to system view"""
-        logger.info("Host {}: Entering to system view".format(self._host))
+        logger.info(f"Host {self._host}: Entering to system view")
         output = ""
         system_view_enter = type(self)._system_view_enter
         if not await self._check_system_view():
@@ -90,7 +90,7 @@ class ComwareLikeDevice(BaseDevice):
 
     async def _exit_system_view(self):
         """Exit from system view"""
-        logger.info("Host {}: Exiting from system view".format(self._host))
+        logger.info(f"Host {self._host}: Exiting from system view")
         output = ""
         system_view_exit = type(self)._system_view_exit
         if await self._check_system_view():
@@ -105,9 +105,10 @@ class ComwareLikeDevice(BaseDevice):
         Sending configuration commands to device
         Automatically exits/enters system-view.
 
-        :param list config_commands: iterable string list with commands for applying to network devices in system view
-        :param bool exit_system_view: If true it will quit from system view automatically
-        :return: The output of this commands
+        :param list config_commands: iterable string list with commands to apply
+        to network devices in system view
+        :param bool exit_system_view: If true, quit from system view automatically
+        :return: The output of these commands
         """
 
         if config_commands is None:
@@ -121,7 +122,5 @@ class ComwareLikeDevice(BaseDevice):
             output += await self._exit_system_view()
 
         output = self._normalize_linefeeds(output)
-        logger.debug(
-            "Host {}: Config commands output: {}".format(self._host, repr(output))
-        )
+        logger.debug(f"Host {self._host,}: Config commands output: {repr(output)}")
         return output

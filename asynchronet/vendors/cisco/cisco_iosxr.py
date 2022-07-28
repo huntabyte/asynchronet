@@ -6,20 +6,22 @@ from asynchronet.vendors.ios_like import IOSLikeDevice
 class CiscoIOSXR(IOSLikeDevice):
     """Class for working with Cisco IOS XR"""
 
+    # Command to commit changes
     _commit_command = "commit"
     """Command for committing changes"""
 
+    # Command to commit changes with a comment
     _commit_comment_command = "commit comment {}"
     """Command for committing changes with comment"""
 
+    # Command to abort changes and exit to privilege mode
     _abort_command = "abort"
-    """Command for aborting all changes and exit to privilege mode"""
 
+    # Command to show failed commit reason
     _show_config_failed = "show configuration failed"
-    """Command for showing the reason of failed commit"""
 
+    # Command to show other commits which occurred during the session
     _show_commit_changes = "show configuration commit changes"
-    """Command for showing the other commit which have occurred during our session"""
 
     async def send_config_set(
         self,
@@ -32,10 +34,12 @@ class CiscoIOSXR(IOSLikeDevice):
         Sending configuration commands to device
         By default automatically exits/enters configuration mode.
 
-        :param list config_commands: iterable string list with commands for applying to network devices in system view
-        :param bool with_commit: if true it commit all changes after applying all config_commands
+        :param list config_commands: iterable string list with commands to apply
+            to network device in system view
+        :param bool with_commit: if True, commit all changes after
+            applying config_commands
         :param string commit_comment: message for configuration commit
-        :param bool exit_config_mode: If true it will quit from configuration mode automatically
+        :param bool exit_config_mode: if True, automatically quit configuration mode
         :return: The output of these commands
         """
 
@@ -74,14 +78,12 @@ class CiscoIOSXR(IOSLikeDevice):
             output += await self.exit_config_mode()
 
         output = self._normalize_linefeeds(output)
-        logger.debug(
-            "Host {}: Config commands output: {}".format(self._host, repr(output))
-        )
+        logger.debug(f"Host {self._host}: Config commands output: {repr(output)}")
         return output
 
     async def exit_config_mode(self):
-        """Exit from configuration mode"""
-        logger.info("Host {}: Exiting from configuration mode".format(self._host))
+        """Exits from configuration mode"""
+        logger.info(f"Host {self._host}: Exiting from configuration mode")
         output = ""
         exit_config = type(self)._config_exit
         if await self.check_config_mode():
@@ -101,4 +103,4 @@ class CiscoIOSXR(IOSLikeDevice):
         abort = type(self)._abort_command
         abort = self._normalize_cmd(abort)
         self._stdin.write(abort)
-        logger.info("Host {}: Cleanup session".format(self._host))
+        logger.info(f"Host {self._host}: Cleanup session")

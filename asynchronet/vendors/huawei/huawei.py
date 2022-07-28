@@ -6,18 +6,18 @@ from asynchronet.logger import logger
 class Huawei(ComwareLikeDevice):
     """Class for working with Huawei"""
 
+    # Command to disable paging
     _disable_paging_command = "screen-length 0 temporary"
-    """Command for disabling paging"""
 
     async def _set_base_prompt(self):
         """
         Setting two important vars
             base_prompt - textual prompt in CLI (usually hostname)
-            base_pattern - regexp for finding the end of command. IT's platform specific parameter
+            base_pattern - regexp for finding the end of command. (platform-specific)
 
         For Comware devices base_pattern is "[\]|>]prompt(\-\w+)?[\]|>]
         """
-        logger.info("Host {}: Setting base prompt".format(self._host))
+        logger.info(f"Host {self._host}: Setting base prompt")
         prompt = await self._find_prompt()
         # Strip off any leading HRP_. characters for USGv5 HA
         prompt = re.sub(r"^HRP_.", "", prompt, flags=re.M)
@@ -34,6 +34,6 @@ class Huawei(ComwareLikeDevice):
             prompt=base_prompt,
             delimiter_right=delimiter_right,
         )
-        logger.debug("Host {}: Base Prompt: {}".format(self._host, self._base_prompt))
-        logger.debug("Host {}: Base Pattern: {}".format(self._host, self._base_pattern))
+        logger.debug(f"Host {self._host}: Base Prompt: {self._base_prompt}")
+        logger.debug(f"Host {self._host}: Base Pattern: {self._base_pattern}")
         return self._base_prompt

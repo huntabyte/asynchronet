@@ -1,15 +1,18 @@
 """
-Base Class for using in connection to network devices
+Base Device class for establishing asynchronous SSH connections to devices.
 
-Connections Method are based upon AsyncSSH and should be running in asyncio loop
+Connection Methods are based on AsyncSSH and should be run in an asyncio loop
 """
 
 
 import asyncio
+from asyncio import AbstractEventLoop
 import re
 from typing import Any
+from socket import AF_UNSPEC, AF_INET, AF_INET6
 
 import asyncssh
+from asyncssh import SSHKnownHosts
 
 from asynchronet.exceptions import TimeoutError, DisconnectError
 from asynchronet.logger import logger
@@ -17,37 +20,39 @@ from asynchronet.logger import logger
 
 class BaseDevice(object):
     """
-    Base Abstract Class for working with network devices
+    Base Abstract Class for working with network devices.
+
+    Defines vendor-independent methods.
     """
 
     def __init__(
         self,
-        host="",
-        username="",
-        password="",
-        port=22,
-        device_type="",
-        timeout=15,
-        loop=None,
-        known_hosts=None,
-        local_addr=None,
-        client_keys=None,
-        passphrase=None,
-        tunnel=None,
-        pattern=None,
-        agent_forwarding=False,
-        agent_path=(),
-        client_version="netdev",
-        family=0,
-        kex_algs=(),
-        encryption_algs=(),
-        mac_algs=(),
-        compression_algs=(),
-        signature_algs=(),
-        server_host_key_algs=None,
+        host: str,
+        username: str,
+        password: str | None = None,
+        port: int = 22,
+        device_type: str = "",
+        timeout: int = 15,
+        loop: AbstractEventLoop | None = None,
+        known_hosts: str | list[str] | bytes | SSHKnownHosts | None = (),
+        local_addr: tuple[str, int] | None = None,
+        client_keys: str | list[str] | list[tuple[str | bytes, str | bytes]] = (),
+        passphrase: str | None = None,
+        tunnel: "BaseDevice" | None = None,
+        pattern: str | None = None,
+        agent_forwarding: bool = False,
+        agent_path: str | None = None,
+        client_version: str = "asynchronet",
+        family: AF_INET | AF_INET6 | AF_UNSPEC = 0,
+        kex_algs: list[str] | None = None,
+        encryption_algs: list[str] | None = None,
+        mac_algs: list[str] | None = None,
+        compression_algs: list[str] | None = None,
+        signature_algs: list[str] | None = None,
+        server_host_key_algs: list[str] | None = None,
     ):
         """
-        Initialize base class for asynchronous working with network devices
+        Initialize base class for establishing asynchronous ssh connections to devices
 
         :param host: device hostname or ip address for connection
         :param username: username for logging to device
@@ -56,11 +61,14 @@ class BaseDevice(object):
         :param device_type: network device type
         :param timeout: timeout in second for getting information from channel
         :param loop: asyncio loop object
-        :param known_hosts: file with known hosts. Default is None (no policy). With () it will use default file
+        :param known_hosts: file with known hosts. Default is None (no policy).
+            With () it will use default file
         :param local_addr: local address for binding source of tcp connection
-        :param client_keys: path for client keys. Default in None. With () it will use default file in OS
+        :param client_keys: path for client keys. Default in None.
+            With () it will use default file in OS
         :param passphrase: password for encrypted client keys
-        :param tunnel: An existing SSH connection that this new connection should be tunneled over
+        :param tunnel: An existing SSH connection that this new connection
+            should be tunneled over
         :param pattern: pattern for searching the end of device prompt.
                 Example: r"{hostname}.*?(\(.*?\))?[{delimeters}]"
         :param agent_forwarding: Allow or not allow agent forward for server
@@ -85,7 +93,8 @@ class BaseDevice(object):
             <https://asyncssh.readthedocs.io/en/latest/api.html#encryptionalgs>`_
         :param mac_algs:
             A list of MAC algorithms to use during the SSH handshake, taken
-            from `MAC algorithms <https://asyncssh.readthedocs.io/en/latest/api.html#macalgs>`_
+            from `MAC algorithms
+            <https://asyncssh.readthedocs.io/en/latest/api.html#macalgs>`_
         :param compression_algs:
             A list of compression algorithms to use during the SSH handshake,
             taken from `compression algorithms
@@ -114,7 +123,8 @@ class BaseDevice(object):
         :type pattern: str
         :type tunnel: :class:`BaseDevice <netdev.vendors.BaseDevice>`
         :type family:
-            :class:`socket.AF_UNSPEC` or :class:`socket.AF_INET` or :class:`socket.AF_INET6`
+            :class:`socket.AF_UNSPEC` or :class:`socket.AF_INET`
+            or :class:`socket.AF_INET6`
         :type local_addr: tuple(str, int)
         :type client_keys:
             *see* `SpecifyingPrivateKeys
@@ -142,7 +152,7 @@ class BaseDevice(object):
         else:
             self._loop = loop
 
-        """Convert needed connect params to a dictionary for simplicity"""
+        # Convert required connect params to a dict for simplicity
         self._connect_params_dict = {
             "host": self._host,
             "port": self._port,
@@ -169,8 +179,8 @@ class BaseDevice(object):
 
         """
         A list of server host key algorithms to use instead of the default of
-        those present in known_hosts when performing the SSH handshake. This should only be set,
-        when the user sets it.
+        those present in known_hosts when performing the SSH handshake.
+        This should only be set, when the user sets it.
         """
         if server_host_key_algs is not None:
             self._connect_params_dict["server_host_key_algs"] = server_host_key_algs
@@ -181,35 +191,35 @@ class BaseDevice(object):
         self._MAX_BUFFER = 65535
         self._ansi_escape_codes = False
 
+    # These characters will stop reading from buffer.(the end of the device prompt)
     _delimiter_list = [">", "#"]
-    """All this characters will stop reading from buffer. It mean the end of device prompt"""
 
+    # Pattern to use when reading buffer. When found, processing ends.
     _pattern = r"{prompt}.*?(\(.*?\))?[{delimiters}]"
-    """Pattern for using in reading buffer. When it found processing ends"""
 
+    # Command to disable paging
     _disable_paging_command = "terminal length 0"
-    """Command for disabling paging"""
 
     @property
     def base_prompt(self):
-        """Returning base prompt for this network device"""
+        """Returns the base prompt for the network device"""
         return self._base_prompt
 
     async def __aenter__(self):
-        """Async Context Manager"""
+        """Async Context Manager Enter"""
         await self.connect()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async Context Manager"""
+        """Async Context Manager Exit"""
         await self.disconnect()
 
     async def connect(self):
         """
         Basic asynchronous connection method
 
-        It connects to device and makes some preparation steps for working.
-        Usual using 3 functions:
+        It connects to device and makes preparation steps for functionality.
+        Typically using 3 functions:
 
         * _establish_connection() for connecting to device
         * _set_base_prompt() for finding and setting device prompt
@@ -222,7 +232,7 @@ class BaseDevice(object):
         logger.info(f"Host {self._host}: Has connected to the device")
 
     async def _establish_connection(self):
-        """Establishing SSH connection to the network device"""
+        """Establishes SSH connection to the network device"""
         logger.info(f"Host {self._host}: Establishing connection to port {self._port}")
         output = ""
         # initiate SSH connection
@@ -246,10 +256,10 @@ class BaseDevice(object):
 
     async def _set_base_prompt(self):
         """
-        Setting two important vars:
+        Sets two important vars:
 
             base_prompt - textual prompt in CLI (usually hostname)
-            base_pattern - regexp for finding the end of command. It's platform specific parameter
+            base_pattern - regexp for finding the end of command. (platform-specific)
 
         For Cisco devices base_pattern is "prompt(\(.*?\))?[#|>]
         """
@@ -268,7 +278,7 @@ class BaseDevice(object):
         return self._base_prompt
 
     async def _disable_paging(self):
-        """Disable paging method"""
+        """Disables paging method"""
         logger.info(f"Host {self._host}: Trying to disable paging")
         command = type(self)._disable_paging_command
         command = self._normalize_cmd(command)
@@ -307,7 +317,7 @@ class BaseDevice(object):
         strip_prompt=True,
     ):
         """
-        Sending command to device (support interactive commands with pattern)
+        Sends command to device (supports interactive commands with pattern)
 
         :param str command_string: command for executing basically in privilege mode
         :param str pattern: pattern for waiting in output (for interactive commands)
@@ -347,16 +357,22 @@ class BaseDevice(object):
             return a_string
 
     async def _read_until_prompt(self):
-        """Read channel until self.base_pattern detected. Return ALL data available"""
+        """Reads channel until self.base_pattern is detected.
+
+        Returns all data available.
+        """
         return await self._read_until_pattern(self._base_pattern)
 
     async def _read_until_pattern(self, pattern="", re_flags=0) -> Any:
-        """Read channel until pattern detected. Return ALL data available"""
+        """Reads channel until pattern detected.
+
+        Returns all data available.
+        """
         output = ""
         logger.info(f"Host {self._host}: Reading until pattern")
         if not pattern:
             pattern = self._base_pattern
-        logger.debug("Host {self._host}: Reading pattern: {pattern}")
+        logger.debug(f"Host {self._host}: Reading pattern: {pattern}")
         while True:
             fut = self._stdout.read(self._MAX_BUFFER)
             try:
@@ -365,12 +381,16 @@ class BaseDevice(object):
                 raise TimeoutError(self._host)
             if re.search(pattern, output, flags=re_flags):
                 logger.debug(
-                    f"Host {self._host}: Reading pattern '{pattern}' was found: {repr(output)}"
+                    f"Host {self._host}: Reading pattern '{pattern}'"
+                    f"was found: {repr(output)}"
                 )
                 return output
 
     async def _read_until_prompt_or_pattern(self, pattern="", re_flags=0):
-        """Read until either self.base_pattern or pattern is detected. Return ALL data available"""
+        """Reads until either self.base_pattern or pattern is detected.
+
+        Returns all data available
+        """
         output = ""
         logger.info(f"Host {self._host}: Reading until prompt or pattern")
         if not pattern:
@@ -386,7 +406,8 @@ class BaseDevice(object):
                 base_prompt_pattern, output, flags=re_flags
             ):
                 logger.debug(
-                    f"Host {self._host}: Reading pattern '{pattern}' or '{base_prompt_pattern}' was found: {repr(output)}"
+                    f"Host {self._host}: Reading pattern '{pattern}'"
+                    f"or '{base_prompt_pattern}' was found: {repr(output)}"
                 )
                 return output
 
@@ -398,10 +419,9 @@ class BaseDevice(object):
 
     @staticmethod
     def _strip_command(command_string, output):
-        """
-        Strip command_string from output string
+        """Strips command_string from output string
 
-        Cisco IOS adds backspaces into output for long commands (i.e. for commands that line wrap)
+        Cisco IOS adds backspaces into output for long commands
         """
         logger.info("Stripping command")
         backspace_char = "\x08"
@@ -418,13 +438,13 @@ class BaseDevice(object):
 
     @staticmethod
     def _normalize_linefeeds(a_string):
-        """Convert '\r\r\n','\r\n', '\n\r' to '\n"""
+        """Converts '\r\r\n','\r\n', '\n\r' to '\n"""
         newline = re.compile(r"(\r\r\n|\r\n|\n\r)")
         return newline.sub("\n", a_string)
 
     @staticmethod
     def _normalize_cmd(command):
-        """Normalize CLI commands to have a single trailing newline"""
+        """Normalizes CLI commands to have a single trailing newline"""
         command = command.rstrip("\n")
         command += "\n"
         return command
@@ -435,7 +455,8 @@ class BaseDevice(object):
 
         The commands will be executed one after the other.
 
-        :param list config_commands: iterable string list with commands for applying to network device
+        :param list config_commands: iterable string list with commands for applying to
+        network device
         :return: The output of this commands
         """
         logger.info(f"Host {self._host}: Sending configuration settings")
@@ -457,7 +478,7 @@ class BaseDevice(object):
             output = self._strip_ansi_escape_codes(output)
 
         output = self._normalize_linefeeds(output)
-        logger.debug("Host {self._host: Config commands output: {repr(output)}")
+        logger.debug(f"Host {self._host}: Config commands output: {repr(output)}")
         return output
 
     @staticmethod
@@ -491,7 +512,7 @@ class BaseDevice(object):
             Mikrotik
         """
         logger.info("Stripping ansi escape codes")
-        logger.debug("Unstripped output: {}".format(repr(string_buffer)))
+        logger.debug(f"Unstripped output: {repr(string_buffer)}")
 
         code_save_cursor = chr(27) + r"7"
         code_scroll_screen = chr(27) + r"\[r"

@@ -1,4 +1,4 @@
-""" 
+"""
 Asynchronet Version information
 """
 

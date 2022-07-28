@@ -6,20 +6,26 @@ The **SSHDetect** class is instantiated with the same parameters as a standard
 asynchronet connection. The only acceptable value for the `device_type` argument
 is `autodetect`.
 
-Incorporation of this capability was achieved by using existing the code from the autodetect
-module within Netmiko (https://github.com/ktbyers/netmiko). The code was slightly modified to
-support asynchronous operations.
+Incorporation of this capability was achieved by using existing the code from the
+autodetect module within Netmiko (https://github.com/ktbyers/netmiko).
+The code was slightly modified to support asynchronous operations.
 """
 
 import asyncio
+from asyncio import AbstractEventLoop
+from socket import AF_UNSPEC, AF_INET, AF_INET6
+
 from typing import Union
 import re
 from typing import Dict, List, Optional
 
 import asyncssh
+from asyncssh import SSHKnownHosts
+
 
 from asynchronet.exceptions import TimeoutError, DisconnectError
 from asynchronet.logger import logger
+from asynchronet.vendors.base import BaseDevice
 
 SSH_MAPPER_DICT = {
     "alcatel_aos": {
@@ -257,32 +263,32 @@ class SSHDetect(object):
 
     def __init__(
         self,
-        host="",
-        username="",
-        password="",
-        port=22,
-        device_type="",
-        timeout=15,
-        loop=None,
-        known_hosts=None,
-        local_addr=None,
-        client_keys=None,
-        passphrase=None,
-        tunnel=None,
-        pattern=None,
-        agent_forwarding=False,
-        agent_path=(),
-        client_version="netdev",
-        family=0,
-        kex_algs=(),
-        encryption_algs=(),
-        mac_algs=(),
-        compression_algs=(),
-        signature_algs=(),
-        server_host_key_algs=None,
+        host: str,
+        username: str,
+        password: str | None = None,
+        port: int = 22,
+        device_type: str = "",
+        timeout: int = 15,
+        loop: AbstractEventLoop | None = None,
+        known_hosts: str | list[str] | bytes | SSHKnownHosts | None = None,
+        local_addr: tuple[str, int] | None = None,
+        client_keys: str | list[str] | list[tuple[str | bytes, str | bytes]] = None,
+        passphrase: str | None = None,
+        tunnel: BaseDevice | None = None,
+        pattern: str | None = None,
+        agent_forwarding: bool = False,
+        agent_path: str | None = None,
+        client_version: str = "asynchronet",
+        family: AF_INET | AF_INET6 | AF_UNSPEC = 0,
+        kex_algs: list[str] | None = None,
+        encryption_algs: list[str] | None = None,
+        mac_algs: list[str] | None = None,
+        compression_algs: list[str] | None = None,
+        signature_algs: list[str] | None = None,
+        server_host_key_algs: list[str] | None = None,
     ):
         """
-        Initialize base class for asynchronous working with network devices
+        Initialize base class for establishing asynchronous ssh connections to devices
 
         :param host: device hostname or ip address for connection
         :param username: username for logging to device
@@ -291,11 +297,14 @@ class SSHDetect(object):
         :param device_type: network device type
         :param timeout: timeout in second for getting information from channel
         :param loop: asyncio loop object
-        :param known_hosts: file with known hosts. Default is None (no policy). With () it will use default file
+        :param known_hosts: file with known hosts. Default is None (no policy).
+            With () it will use default file
         :param local_addr: local address for binding source of tcp connection
-        :param client_keys: path for client keys. Default in None. With () it will use default file in OS
+        :param client_keys: path for client keys. Default in None.
+            With () it will use default file in OS
         :param passphrase: password for encrypted client keys
-        :param tunnel: An existing SSH connection that this new connection should be tunneled over
+        :param tunnel: An existing SSH connection that this new connection
+            should be tunneled over
         :param pattern: pattern for searching the end of device prompt.
                 Example: r"{hostname}.*?(\(.*?\))?[{delimeters}]"
         :param agent_forwarding: Allow or not allow agent forward for server
@@ -320,7 +329,8 @@ class SSHDetect(object):
             <https://asyncssh.readthedocs.io/en/latest/api.html#encryptionalgs>`_
         :param mac_algs:
             A list of MAC algorithms to use during the SSH handshake, taken
-            from `MAC algorithms <https://asyncssh.readthedocs.io/en/latest/api.html#macalgs>`_
+            from `MAC algorithms
+            <https://asyncssh.readthedocs.io/en/latest/api.html#macalgs>`_
         :param compression_algs:
             A list of compression algorithms to use during the SSH handshake,
             taken from `compression algorithms
@@ -349,7 +359,8 @@ class SSHDetect(object):
         :type pattern: str
         :type tunnel: :class:`BaseDevice <netdev.vendors.BaseDevice>`
         :type family:
-            :class:`socket.AF_UNSPEC` or :class:`socket.AF_INET` or :class:`socket.AF_INET6`
+            :class:`socket.AF_UNSPEC` or :class:`socket.AF_INET`
+            or :class:`socket.AF_INET6`
         :type local_addr: tuple(str, int)
         :type client_keys:
             *see* `SpecifyingPrivateKeys
@@ -380,7 +391,7 @@ class SSHDetect(object):
         else:
             self._loop = loop
 
-        """Convert needed connect params to a dictionary for simplicity"""
+        # Convert required connect params to a dict for simplicity
         self._connect_params_dict = {
             "host": self._host,
             "port": self._port,
@@ -405,11 +416,9 @@ class SSHDetect(object):
         if pattern is not None:
             self._pattern = pattern
 
-        """
-        A list of server host key algorithms to use instead of the default of
-        those present in known_hosts when performing the SSH handshake. This should only be set,
-        when the user sets it.
-        """
+        # A list of server host key algorithms to use instead of the default of
+        # those present in known_hosts when performing the SSH handshake.
+        # This should only be set, when the user sets it.
         if server_host_key_algs is not None:
             self._connect_params_dict["server_host_key_algs"] = server_host_key_algs
 
@@ -420,45 +429,45 @@ class SSHDetect(object):
         self._MAX_BUFFER = 65535
         self._ansi_escape_codes = False
 
+    # These characters will stop reading from buffer.(the end of the device prompt)
     _delimiter_list = [">", "#"]
-    """All this characters will stop reading from buffer. It mean the end of device prompt"""
 
+    # Pattern to use when reading buffer. When found, processing ends.
     _pattern = r"{prompt}.*?(\(.*?\))?[{delimiters}]"
-    """Pattern for using in reading buffer. When it found processing ends"""
 
+    # Command to disable paging
     _disable_paging_command = "terminal length 0"
-    """Command for disabling paging"""
 
     @property
     def base_prompt(self):
-        """Returning base prompt for this network device"""
+        """Returns the base prompt for the network device"""
         return self._base_prompt
 
     async def __aenter__(self):
-        """Async Context Manager"""
+        """Async Context Manager Enter"""
         await self.connect()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async Context Manager"""
+        """Async Context Manager Exit"""
         await self.disconnect()
 
     async def connect(self):
         """
         Basic asynchronous connection method
 
-        It connects to device and makes some preparation steps for working.
-        Usual using 3 functions:
+        It connects to device and makes preparation steps for functionality.
+        Typically using 3 functions:
 
         * _establish_connection() for connecting to device
         * _set_base_prompt() for finding and setting device prompt
         * _disable_paging() for non interactive output in commands
         """
-        logger.info("Host {}: Trying to connect to the device".format(self._host))
+        logger.info(f"Host {self._host}: Trying to connect to the device")
         await self._establish_connection()
         await self._set_base_prompt()
         await self._disable_paging()
-        logger.info("Host {}: Has connected to the device".format(self._host))
+        logger.info(f"Host {self._host}: Has connected to the device")
 
     async def autodetect(self) -> Union[str, None]:
         """
@@ -467,7 +476,8 @@ class SSHDetect(object):
         Returns
         -------
         best_match : str or None
-            The device type that is currently the best to use to interact with the device
+            The device type that is currently the best to use
+            to interact with the device
         """
         await self.connect()
         for device_type, autodetect_dict in SSH_MAPPER_BASE:
@@ -490,10 +500,8 @@ class SSHDetect(object):
                 return best_match[0][0]
 
     async def _establish_connection(self):
-        """Establishing SSH connection to the network device"""
-        logger.info(
-            "Host {}: Establishing connection to port {}".format(self._host, self._port)
-        )
+        """Establishes SSH connection to the network device"""
+        logger.info(f"Host {self._host}: Establishing connection to port {self._port}")
         output = ""
         # initiate SSH connection
         fut = asyncssh.connect(**self._connect_params_dict)
@@ -506,26 +514,24 @@ class SSHDetect(object):
         self._stdin, self._stdout, self._stderr = await self._conn.open_session(
             term_type="Dumb", term_size=(200, 24)
         )
-        logger.info("Host {}: Connection is established".format(self._host))
+        logger.info(f"Host {self._host}: Connection is established")
         # Flush unnecessary data
         delimiters = map(re.escape, type(self)._delimiter_list)
         delimiters = r"|".join(delimiters)
         output = await self._read_until_pattern(delimiters)
-        logger.debug(
-            "Host {}: Establish Connection Output: {}".format(self._host, repr(output))
-        )
+        logger.debug(f"Host {self._host}: Establish Connection Output: {repr(output)}")
         return output
 
     async def _set_base_prompt(self):
         """
-        Setting two important vars:
+        Sets two important vars:
 
             base_prompt - textual prompt in CLI (usually hostname)
-            base_pattern - regexp for finding the end of command. It's platform specific parameter
+            base_pattern - regexp for finding the end of command. (platform-specific)
 
         For Cisco devices base_pattern is "prompt(\(.*?\))?[#|>]
         """
-        logger.info("Host {}: Setting base prompt".format(self._host))
+        logger.info(f"Host {self._host}: Setting base prompt")
         prompt = await self._find_prompt()
 
         # Strip off trailing terminator
@@ -535,30 +541,26 @@ class SSHDetect(object):
         base_prompt = re.escape(self._base_prompt[:12])
         pattern = type(self)._pattern
         self._base_pattern = pattern.format(prompt=base_prompt, delimiters=delimiters)
-        logger.debug("Host {}: Base Prompt: {}".format(self._host, self._base_prompt))
-        logger.debug("Host {}: Base Pattern: {}".format(self._host, self._base_pattern))
+        logger.debug(f"Host {self._host}: Base Prompt: {self._base_prompt}")
+        logger.debug(f"Host {self._host}: Base Pattern: {self._base_pattern}")
         return self._base_prompt
 
     async def _disable_paging(self):
-        """Disable paging method"""
-        logger.info("Host {}: Trying to disable paging".format(self._host))
+        """Disables paging method"""
+        logger.info(f"Host {self._host}: Trying to disable paging")
         command = type(self)._disable_paging_command
         command = self._normalize_cmd(command)
-        logger.debug(
-            "Host {}: Disable paging command: {}".format(self._host, repr(command))
-        )
+        logger.debug(f"Host {self._host}: Disable paging command: {repr(command)}")
         self._stdin.write(command)
         output = await self._read_until_prompt()
-        logger.debug(
-            "Host {}: Disable paging output: {}".format(self._host, repr(output))
-        )
+        logger.debug(f"Host {self._host}: Disable paging output: {repr(output)}")
         if self._ansi_escape_codes:
             output = self._strip_ansi_escape_codes(output)
         return output
 
     async def _find_prompt(self):
         """Finds the current network device prompt, last line only"""
-        logger.info("Host {}: Finding prompt".format(self._host))
+        logger.info(f"Host {self._host}: Finding prompt")
         self._stdin.write(self._normalize_cmd("\n"))
         prompt = ""
         delimiters = map(re.escape, type(self)._delimiter_list)
@@ -569,9 +571,9 @@ class SSHDetect(object):
             prompt = self._strip_ansi_escape_codes(prompt)
         if not prompt:
             raise ValueError(
-                "Host {}: Unable to find prompt: {}".format(self._host, repr(prompt))
+                f"Host {self._host}: Unable to find prompt: {repr(prompt)}"
             )
-        logger.debug("Host {}: Found Prompt: {}".format(self._host, repr(prompt)))
+        logger.debug(f"Host {self._host}: Found Prompt: {repr(prompt)}")
         return prompt
 
     async def _send_command(
@@ -592,12 +594,10 @@ class SSHDetect(object):
         :param bool strip_prompt: True or False for stripping ending device prompt
         :return: The output of the command
         """
-        logger.info("Host {}: Sending command".format(self._host))
+        logger.info(f"Host {self._host}: Sending command")
         output = ""
         command_string = self._normalize_cmd(command_string)
-        logger.debug(
-            "Host {}: Send command: {}".format(self._host, repr(command_string))
-        )
+        logger.debug(f"Host {self._host}: Send command: {repr(command_string)}")
         self._stdin.write(command_string)
         output = await self._read_until_prompt_or_pattern(pattern, re_flags)
 
@@ -610,14 +610,13 @@ class SSHDetect(object):
         if strip_command:
             output = self._strip_command(command_string, output)
 
-        logger.debug(
-            "Host {}: Send command output: {}".format(self._host, repr(output))
-        )
+        logger.debug(f"Host {self._host}: Send command output: {repr(output)}")
         return output
 
     async def _send_command_wrapper(self, cmd: str) -> str:
         """
-        Send command to the remote device with a caching feature to avoid sending the same command
+        Send command to the remote device with a caching feature to
+        avoid sending the same command
         twice based on the SSH_MAPPER_BASE dict cmd key.
 
         Parameters
@@ -640,7 +639,7 @@ class SSHDetect(object):
 
     def _strip_prompt(self, a_string):
         """Strip the trailing router prompt from the output"""
-        logger.info("Host {}: Stripping prompt".format(self._host))
+        logger.info(f"Host {self._host}: Stripping prompt")
         response_list = a_string.split("\n")
         last_line = response_list[-1]
         if self._base_prompt in last_line:
@@ -649,16 +648,22 @@ class SSHDetect(object):
             return a_string
 
     async def _read_until_prompt(self):
-        """Read channel until self.base_pattern detected. Return ALL data available"""
+        """Reads channel until self.base_pattern is detected.
+
+        Returns all data available.
+        """
         return await self._read_until_pattern(self._base_pattern)
 
     async def _read_until_pattern(self, pattern="", re_flags=0):
-        """Read channel until pattern detected. Return ALL data available"""
+        """Reads channel until pattern detected.
+
+        Returns all data available.
+        """
         output = ""
-        logger.info("Host {}: Reading until pattern".format(self._host))
+        logger.info(f"Host {self._host}: Reading until pattern")
         if not pattern:
             pattern = self._base_pattern
-        logger.debug("Host {}: Reading pattern: {}".format(self._host, pattern))
+        logger.debug(f"Host {self._host}: Reading pattern: {pattern}")
         while True:
             fut = self._stdout.read(self._MAX_BUFFER)
             try:
@@ -667,16 +672,18 @@ class SSHDetect(object):
                 raise TimeoutError(self._host)
             if re.search(pattern, output, flags=re_flags):
                 logger.debug(
-                    "Host {}: Reading pattern '{}' was found: {}".format(
-                        self._host, pattern, repr(output)
-                    )
+                    f"Host {self._host}: Reading pattern '{pattern}' was found:"
+                    f"{repr(output)}"
                 )
                 return output
 
     async def _read_until_prompt_or_pattern(self, pattern="", re_flags=0):
-        """Read until either self.base_pattern or pattern is detected. Return ALL data available"""
+        """Reads until either self.base_pattern or pattern is detected.
+
+        Returns all data available
+        """
         output = ""
-        logger.info("Host {}: Reading until prompt or pattern".format(self._host))
+        logger.info(f"Host {self._host}: Reading until prompt or pattern")
         if not pattern:
             pattern = self._base_pattern
         base_prompt_pattern = self._base_pattern
@@ -690,9 +697,8 @@ class SSHDetect(object):
                 base_prompt_pattern, output, flags=re_flags
             ):
                 logger.debug(
-                    "Host {}: Reading pattern '{}' or '{}' was found: {}".format(
-                        self._host, pattern, base_prompt_pattern, repr(output)
-                    )
+                    f"Host {self._host}: Reading pattern '{pattern}' or"
+                    f"'{base_prompt_pattern}' was found: {repr(output)}"
                 )
                 return output
 
@@ -704,10 +710,9 @@ class SSHDetect(object):
 
     @staticmethod
     def _strip_command(command_string, output):
-        """
-        Strip command_string from output string
+        """Strips command_string from output string
 
-        Cisco IOS adds backspaces into output for long commands (i.e. for commands that line wrap)
+        Cisco IOS adds backspaces into output for long commands
         """
         logger.info("Stripping command")
         backspace_char = "\x08"
@@ -741,21 +746,20 @@ class SSHDetect(object):
 
         The commands will be executed one after the other.
 
-        :param list config_commands: iterable string list with commands for applying to network device
+        :param list config_commands: iterable string list with commands for applying to
+        network device
         :return: The output of this commands
         """
-        logger.info("Host {}: Sending configuration settings".format(self._host))
+        logger.info(f"Host {self._host}: Sending configuration settings")
         if config_commands is None:
             return ""
         if not hasattr(config_commands, "__iter__"):
             raise ValueError(
-                "Host {}: Invalid argument passed into send_config_set".format(
-                    self._host
-                )
+                f"Host {self._host}: Invalid argument passed into send_config_set"
             )
 
         # Send config commands
-        logger.debug("Host {}: Config commands: {}".format(self._host, config_commands))
+        logger.debug(f"Host {self._host}: Config commands: {config_commands}")
         output = ""
         for cmd in config_commands:
             self._stdin.write(self._normalize_cmd(cmd))
@@ -765,9 +769,7 @@ class SSHDetect(object):
             output = self._strip_ansi_escape_codes(output)
 
         output = self._normalize_linefeeds(output)
-        logger.debug(
-            "Host {}: Config commands output: {}".format(self._host, repr(output))
-        )
+        logger.debug(f"Host {self._host}: Config commands output: {repr(output)}")
         return output
 
     @staticmethod
@@ -801,7 +803,7 @@ class SSHDetect(object):
             Mikrotik
         """
         logger.info("Stripping ansi escape codes")
-        logger.debug("Unstripped output: {}".format(repr(string_buffer)))
+        logger.debug(f"Unstripped output: {repr(string_buffer)}")
 
         code_save_cursor = chr(27) + r"7"
         code_scroll_screen = chr(27) + r"\[r"
@@ -836,7 +838,7 @@ class SSHDetect(object):
         # CODE_NEXT_LINE must substitute with '\n'
         output = re.sub(code_next_line, "\n", output)
 
-        logger.debug("Stripped output: {}".format(repr(output)))
+        logger.debug(f"Stripped output: {repr(output)}")
 
         return output
 
@@ -848,9 +850,11 @@ class SSHDetect(object):
         priority: int = 99,
     ) -> int:
         """
-        Standard method to try to auto-detect the device type. This method will be called for each
-        device_type present in SSH_MAPPER_BASE dict ('dispatch' key). It will attempt to send a
-        command and match some regular expression from the ouput for each entry in SSH_MAPPER_BASE
+        Standard method to try to auto-detect the device type.
+        This method will be called for each
+        device_type present in SSH_MAPPER_BASE dict ('dispatch' key).
+        It will attempt to send a command and match some regular expression
+        from the ouput for each entry in SSH_MAPPER_BASE
         ('cmd' and 'search_pattern' keys).
 
         Parameters
@@ -858,9 +862,11 @@ class SSHDetect(object):
         cmd : str
             The command to send to the remote device after checking cache.
         search_patterns : list
-            A list of regular expression to look for in the command's output (default: None).
+            A list of regular expression to look for in the command's output
+            (default: None).
         re_flags: re.flags, optional
-            Any flags from the python re module to modify the regular expression (default: re.I).
+            Any flags from the python re module to modify the regular expression
+            (default: re.I).
         priority: int, optional
             The confidence the match is right between 0 and 99 (default: 99).
         """
@@ -893,12 +899,12 @@ class SSHDetect(object):
 
     async def _cleanup(self):
         """Any needed cleanup before closing connection"""
-        logger.info("Host {}: Cleanup session".format(self._host))
+        logger.info(f"Host {self._host}: Cleanup session")
         pass
 
     async def disconnect(self):
         """Gracefully close the SSH connection"""
-        logger.info("Host {}: Disconnecting".format(self._host))
+        logger.info(f"Host {self._host}: Disconnecting")
         await self._cleanup()
         self._conn.close()
         await self._conn.wait_closed()

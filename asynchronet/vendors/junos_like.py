@@ -1,7 +1,7 @@
 """
-JunOSLikeDevice Class is abstract class for using in Juniper JunOS like devices
+JunOSLikeDevice Class is abstract class for JunOS-like devices
 
-Connection Method are based upon AsyncSSH and should be running in asyncio loop
+Connection Methods are based on AsyncSSH and should be run in an asyncio loop
 """
 
 import re
@@ -12,50 +12,54 @@ from asynchronet.vendors.base import BaseDevice
 
 class JunOSLikeDevice(BaseDevice):
     """
-    JunOSLikeDevice Class for working with Juniper JunOS like devices
+    JunOSLikeDevice Class for working with JunOS-like devices
 
-    Juniper JunOS like devices having several concepts:
+    Juniper JunOS like devices typically have the following:
 
-    * shell mode (csh). This is csh shell for FreeBSD. This mode is not covered by this Class.
-    * cli mode (specific shell). The entire configuration is usual configured in this shell:
+    * shell mode (csh).
+        This is csh shell for FreeBSD. This mode is not covered by this Class.
+    * cli mode (specific shell).
+        The entire configuration is usual configured in this shell
 
-      * operation mode. This mode is using for getting information from device
-      * configuration mode. This mode is using for configuration system
+    * operation mode.
+        This mode is using for getting information from device
+    * configuration mode.
+        This mode is using for configuration system
     """
 
+    # These characters will stop reading from buffer.(the end of the device prompt)
     _delimiter_list = ["%", ">", "#"]
-    """All this characters will stop reading from buffer. It mean the end of device prompt"""
 
+    # Pattern to use when reading buffer. When found, processing ends.
     _pattern = r"\w+(\@[\-\w]*)?[{delimiters}]"
-    """Pattern for using in reading buffer. When it found processing ends"""
 
+    # Command to disable paging
     _disable_paging_command = "set cli screen-length 0"
-    """Command for disabling paging"""
 
+    # Command to enter configuration mode
     _config_enter = "configure"
-    """Command for entering to configuration mode"""
 
+    # Command to exit configuration mode & enter privilege exec mode
     _config_exit = "exit configuration-mode"
-    """Command for existing from configuration mode to privilege exec"""
 
+    # String to check in prompt = If exists - we're in configuration mode
     _config_check = "#"
-    """Checking string in prompt. If it's exist im prompt - we are in configuration mode"""
 
+    # Command to commit changes
     _commit_command = "commit"
-    """Command for committing changes"""
 
+    # Command to commit changes with a comment
     _commit_comment_command = "commit comment {}"
-    """Command for committing changes with comment"""
 
     async def _set_base_prompt(self):
         """
         Setting two important vars
             base_prompt - textual prompt in CLI (usually username or hostname)
-            base_pattern - regexp for finding the end of command. IT's platform specific parameter
+            base_pattern - regexp for finding the end of command. (platform-specific)
 
         For JunOS devices base_pattern is "user(@[hostname])?[>|#]
         """
-        logger.info("Host {}: Setting base prompt".format(self._host))
+        logger.info(f"Host {self._host}: Setting base prompt")
         prompt = await self._find_prompt()
         prompt = prompt[:-1]
         # Strip off trailing terminator
@@ -64,24 +68,25 @@ class JunOSLikeDevice(BaseDevice):
         self._base_prompt = prompt
         delimiters = map(re.escape, type(self)._delimiter_list)
         delimiters = r"|".join(delimiters)
-        base_prompt = re.escape(self._base_prompt[:12])
         pattern = type(self)._pattern
         self._base_pattern = pattern.format(delimiters=delimiters)
-        logger.debug("Host {}: Base Prompt: {}".format(self._host, self._base_prompt))
-        logger.debug("Host {}: Base Pattern: {}".format(self._host, self._base_pattern))
+        logger.debug(f"Host {self._host}: Base Prompt: {self._base_prompt}")
+        logger.debug(f"Host {self._host}: Base Pattern: {self._base_pattern}")
         return self._base_prompt
 
     async def check_config_mode(self):
-        """Check if are in configuration mode. Return boolean"""
-        logger.info("Host {}: Checking configuration mode".format(self._host))
+        """Checks if in configuration mode.
+
+        Returns boolean"""
+        logger.info(f"Host {self._host}: Checking configuration mode")
         check_string = type(self)._config_check
         self._stdin.write(self._normalize_cmd("\n"))
         output = await self._read_until_prompt()
         return check_string in output
 
     async def config_mode(self):
-        """Enter to configuration mode"""
-        logger.info("Host {}: Entering to configuration mode".format(self._host))
+        """Enters configuration mode"""
+        logger.info(f"Host {self._host}: Entering to configuration mode")
         output = ""
         config_enter = type(self)._config_enter
         if not await self.check_config_mode():
@@ -92,8 +97,8 @@ class JunOSLikeDevice(BaseDevice):
         return output
 
     async def exit_config_mode(self):
-        """Exit from configuration mode"""
-        logger.info("Host {}: Exiting from configuration mode".format(self._host))
+        """Exits from configuration mode"""
+        logger.info(f"Host {self._host}: Exiting from configuration mode")
         output = ""
         config_exit = type(self)._config_exit
         if await self.check_config_mode():
@@ -114,10 +119,12 @@ class JunOSLikeDevice(BaseDevice):
         Sending configuration commands to device
         By default automatically exits/enters configuration mode.
 
-        :param list config_commands: iterable string list with commands for applying to network devices in system view
-        :param bool with_commit: if true it commit all changes after applying all config_commands
+        :param list config_commands: iterable string list with commands to apply
+        to network devices in system view
+        :param bool with_commit: if true, commits all changes after applying
+        all config_commands
         :param string commit_comment: message for configuration commit
-        :param bool exit_config_mode: If true it will quit from configuration mode automatically
+        :param bool exit_config_mode: If true, automatically quick configuration mode
         :return: The output of these commands
         """
 
@@ -139,7 +146,5 @@ class JunOSLikeDevice(BaseDevice):
             output += await self.exit_config_mode()
 
         output = self._normalize_linefeeds(output)
-        logger.debug(
-            "Host {}: Config commands output: {}".format(self._host, repr(output))
-        )
+        logger.debug(f"Host {self._host}: Config commands output: {repr(output)}")
         return output

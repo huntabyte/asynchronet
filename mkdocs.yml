@@ -1,0 +1,36 @@
+site_name: Asynchronet
+site_description: Asynchronet - interact with network device CLIs asynchronously.
+repo_url: https://github.com/huntabyte/asynchronet
+repo_name: huntabyte/asynchronet
+theme:
+  name: material
+  palette:
+    primary: green
+    accent: orange
+  icon:
+    repo: fontawesome/brands/github-alt
+    logo: fontawesome/solid/ethernet
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+plugins:
+  - search
+  - termynal
+nav:
+  - Asynchronet: index.md
+  - features.md
+markdown_extensions:
+- toc:
+    permalink: true
+- admonition
+- attr_list
+- md_in_html
+- pymdownx.highlight:
+    use_pygments: true
+- pymdownx.superfences
+- pymdownx.inlinehilite
+- pymdownx.snippets

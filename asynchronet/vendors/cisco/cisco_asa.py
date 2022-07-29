@@ -1,5 +1,9 @@
-"""Subclass specific to Cisco ASA"""
+"""
+Cisco ASA support
 
+For use with Cisco ASA devices.
+
+"""
 import re
 
 from asynchronet.logger import logger
@@ -7,7 +11,7 @@ from asynchronet.vendors.ios_like import IOSLikeDevice
 
 
 class CiscoASA(IOSLikeDevice):
-    """Class for working with Cisco ASA"""
+    """Class for interacting with Cisco ASA devices."""
 
     def __init__(self, *args, **kwargs):
         """

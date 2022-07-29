@@ -16,7 +16,8 @@ Python 3.10+
 ## Installation
 
 ```console
-pip install asynchronet
+$ pip install asynchronet
+---> 100%
 ```
 
 ## Example

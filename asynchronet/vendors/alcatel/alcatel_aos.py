@@ -6,12 +6,12 @@ import re
 
 
 class AlcatelAOS(BaseDevice):
-    """Class for working with Alcatel AOS"""
+    """Class for interacting with Alcatel AOS devices."""
 
     async def _read_until_prompt_or_pattern(self, pattern="", re_flags=0) -> Any:
         """
         Read until either self.base_pattern or pattern is detected.
-        Return ALL data availables
+        Return all data available
         """
         output = ""
         logger.info(f"Host {self._host}: Reading until prompt or pattern")

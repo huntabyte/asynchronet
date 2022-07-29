@@ -1,9 +1,16 @@
+"""
+Juiper JunOS Support
+
+For use with Juniper JunOS Devices
+
+"""
+
 from asynchronet.logger import logger
 from asynchronet.vendors.junos_like import JunOSLikeDevice
 
 
 class JuniperJunOS(JunOSLikeDevice):
-    """Class for working with Juniper JunOS"""
+    """Class for working interacting Juniper JunOS devices"""
 
     # String to check for shell mode
     _cli_check = ">"

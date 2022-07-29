@@ -1,10 +1,17 @@
+"""
+Cisco IOS-XR support
+
+For use with Cisco IOS-XR Devices
+
+"""
+
 from asynchronet.exceptions import CommitError
 from asynchronet.logger import logger
 from asynchronet.vendors.ios_like import IOSLikeDevice
 
 
 class CiscoIOSXR(IOSLikeDevice):
-    """Class for working with Cisco IOS XR"""
+    """Class for interacting with Cisco IOS-XR devices"""
 
     # Command to commit changes
     _commit_command = "commit"

@@ -1,10 +1,17 @@
+"""
+Huawei Support
+
+For use with Huawei Devices
+
+"""
+
 from asynchronet.vendors.comware_like import ComwareLikeDevice
 import re
 from asynchronet.logger import logger
 
 
 class Huawei(ComwareLikeDevice):
-    """Class for working with Huawei"""
+    """Class for interacting with Huawei devices."""
 
     # Command to disable paging
     _disable_paging_command = "screen-length 0 temporary"

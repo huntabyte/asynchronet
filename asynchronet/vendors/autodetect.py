@@ -3,7 +3,7 @@ The autodetect module is used to automatically detect the device_type required
 to initiate a new SSH connection with the remote host.
 
 The **SSHDetect** class is instantiated with the same parameters as a standard
-asynchronet connection. The only acceptable value for the `device_type` argument
+asynchronet device. The only acceptable value for the `device_type` argument
 is `autodetect`.
 
 Incorporation of this capability was achieved by using existing the code from the
@@ -258,7 +258,7 @@ SSH_MAPPER_BASE.reverse()
 
 class SSHDetect(object):
     """
-    Base Abstract Class for working with network devices
+    Base Abstract Class for interacting with network devices
     """
 
     def __init__(

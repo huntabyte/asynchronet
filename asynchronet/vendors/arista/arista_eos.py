@@ -2,6 +2,6 @@ from asynchronet.vendors.ios_like import IOSLikeDevice
 
 
 class AristaEOS(IOSLikeDevice):
-    """Class for working with Arista EOS"""
+    """Class for interacting with Arista EOS devices."""
 
     pass

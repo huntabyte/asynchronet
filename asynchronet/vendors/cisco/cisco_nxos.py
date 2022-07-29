@@ -1,10 +1,17 @@
+"""
+Cisco Nexus support
+
+For use with Cisco Nexus/NX-OS Devices
+
+"""
+
 import re
 
 from asynchronet.vendors.ios_like import IOSLikeDevice
 
 
 class CiscoNXOS(IOSLikeDevice):
-    """Class for working with Cisco Nexus/NX-OS"""
+    """Class for interacting with Cisco Nexus/NX-OS devices"""
 
     @staticmethod
     def _normalize_linefeeds(a_string):

@@ -1,10 +1,14 @@
-"""Subclass specific to Cisco SG3XX"""
+"""
+Cisco SG3XX support
 
+For use with Cisco SG3XX Devices
+
+"""
 from asynchronet.vendors.ios_like import IOSLikeDevice
 
 
 class CiscoSG3XX(IOSLikeDevice):
-    """Class for working with Cisco SG3XX"""
+    """Class for interacting with Cisco SG3XX devices."""
 
     def __init__(self, *args, **kwargs):
         """

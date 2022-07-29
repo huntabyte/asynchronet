@@ -8,17 +8,17 @@ from asynchronet.vendors.ios_like import IOSLikeDevice
 class UbiquityEdgeSwitch(IOSLikeDevice):
     """Class for working with Ubiquity Edge Switches"""
 
+    # Pattern to use when reading buffer. When found, processing ends.
     _pattern = r"\({prompt}.*?\) (\(.*?\))?[{delimiters}]"
-    """Pattern for using in reading buffer. When it found processing ends"""
 
+    # Command to enter configuration mode
     _config_enter = "configure"
-    """Command for entering to configuration mode"""
 
     async def _set_base_prompt(self):
         """
         Setting two important vars
             base_prompt - textual prompt in CLI (usually hostname)
-            base_pattern - regexp for finding the end of command. IT's platform specific parameter
+            base_pattern - regexp for finding the end of command. (platform-specific)
 
         For Ubiquity devices base_pattern is "(prompt) (\(.*?\))?[>|#]"
         """

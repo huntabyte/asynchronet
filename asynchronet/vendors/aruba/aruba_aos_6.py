@@ -1,4 +1,9 @@
-"""Subclass specific to Aruba AOS 6.x"""
+"""
+Aruba AOS6.X support
+
+For use with ArubaOS6.X Controllers
+
+"""
 
 import re
 
@@ -7,7 +12,7 @@ from asynchronet.vendors.ios_like import IOSLikeDevice
 
 
 class ArubaAOS6(IOSLikeDevice):
-    """Class for working with Aruba OS 6.X"""
+    """Class for interacting with Aruba OS 6.X devices"""
 
     # Command to disable paging
     _disable_paging_command = "no paging"

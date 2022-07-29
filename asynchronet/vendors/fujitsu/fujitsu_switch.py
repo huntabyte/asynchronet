@@ -1,5 +1,9 @@
-"""Subclass specific to Fujitsu Blade Switch"""
+"""
+Fujitsu Switch support
 
+For use with Fujitsu Blade Switches
+
+"""
 import re
 
 from asynchronet.logger import logger

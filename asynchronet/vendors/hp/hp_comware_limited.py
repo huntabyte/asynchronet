@@ -1,9 +1,16 @@
+"""
+HP Compare Limited support
+
+For use with HP Compare Limited-like 1920 & 1920 devices
+
+"""
+
 from asynchronet.logger import logger
 from asynchronet.vendors.comware_like import ComwareLikeDevice
 
 
 class HPComwareLimited(ComwareLikeDevice):
-    """Class for working with HP Comware Limited like 1910 and 1920 models"""
+    """Class for interacting with HP Comware Limited-like devices"""
 
     def __init__(self, cmdline_password="", *args, **kwargs):
         """

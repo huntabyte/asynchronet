@@ -1,6 +1,10 @@
 """
-HW1000 is a class for working with Vipnet HW1000 crypto gateways
+Vipnet HW1000  support
+
+For use with Vipnet HW1000 Crypto Gateways
+
 """
+
 import re
 from asynchronet.logger import logger
 from asynchronet.vendors.base import BaseDevice
@@ -8,7 +12,7 @@ from asynchronet.vendors.base import BaseDevice
 
 class HW1000(BaseDevice):
     """
-    Class for working with Vipnet HW1000
+    Class for interacting with Vipnet HW1000 crypto gateways
 
     HW1000 devices have three administration modes:
     *user exec or unprivileged exec. This mode allows you perform basic tests &

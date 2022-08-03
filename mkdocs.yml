@@ -19,10 +19,17 @@ theme:
     - content.tabs.link
 plugins:
   - search
+  - section-index
+  - mkdocstrings:
+      watch:
+        - asynchronet
   - termynal
+  - autorefs
+
 nav:
-  - Asynchronet: index.md
-  - features.md
+  - Introduction: index.md
+  - Code Reference: reference.md
+
 markdown_extensions:
 - toc:
     permalink: true
@@ -34,3 +41,11 @@ markdown_extensions:
 - pymdownx.superfences
 - pymdownx.inlinehilite
 - pymdownx.snippets
+- pymdownx.betterem:
+      smart_enable: all
+- pymdownx.critic
+- pymdownx.details
+- pymdownx.highlight:
+    linenums_style: pymdownx-inline
+watch:
+  - asynchronet

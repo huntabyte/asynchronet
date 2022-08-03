@@ -1,5 +1,5 @@
-"""
-Factory function for creating asynchronet classes using `device_type`
+"""Contains the factory function which generates asynhcronet device objects.
+
 """
 from asynchronet.vendors import AlcatelAOS
 from asynchronet.vendors import AristaEOS
@@ -46,9 +46,67 @@ platforms_str = "\n".join(platforms)
 
 
 def create(*args, **kwargs):
-    """
-    Factory function selects the proper class and creates object
-    based on device_type
+    """Selects the proper vendor and creates an object based on device_type
+
+    Selects the proper class and creates a device object based on
+    the device_type argument.
+
+    Other parameters:
+        **host: device hostname or ip address for connection
+        **username: username for logging to device
+        **password: user password for logging to device
+        **port: ssh port for connection. Default is 22
+        **device_type: network device type
+        **timeout: timeout in second for getting information from channel
+        **loop: asyncio loop object
+        **known_hosts: file with known hosts. Default is None (no policy).
+            With () it will use default file
+        **local_addr: local address for binding source of tcp connection
+        **client_keys: path for client keys. Default in None.
+            With () it will use default file in OS
+        **passphrase: password for encrypted client keys
+        **tunnel: An existing SSH connection that this new connection
+            should be tunneled over
+        **pattern: pattern for searching the end of device prompt.
+                Example: r"{hostname}.*?(\(.*?\))?[{delimeters}]"
+        **agent_forwarding: Allow or not allow agent forward for server
+        **agent_path:
+            The path of a UNIX domain socket to use to contact an ssh-agent
+            process which will perform the operations needed for client
+            public key authentication. If this is not specified and the environment
+            variable `SSH_AUTH_SOCK` is set, its value will be used as the path.
+            If `client_keys` is specified or this argument is explicitly set to `None`,
+            an ssh-agent will not be used.
+        **client_version: version which advertised to ssh server
+        **family:
+           The address family to use when creating the socket. By default,
+           the address family is automatically selected based on the host.
+        **kex_algs:
+            A list of allowed key exchange algorithms in the SSH handshake,
+            taken from `key exchange algorithms
+            <https://asyncssh.readthedocs.io/en/latest/api.html#kexalgs>`_
+        **encryption_algs:
+            A list of encryption algorithms to use during the SSH handshake,
+            taken from `encryption algorithms
+            <https://asyncssh.readthedocs.io/en/latest/api.html#encryptionalgs>`_
+        **mac_algs:
+            A list of MAC algorithms to use during the SSH handshake, taken
+            from `MAC algorithms
+            <https://asyncssh.readthedocs.io/en/latest/api.html#macalgs>`_
+        **compression_algs:
+            A list of compression algorithms to use during the SSH handshake,
+            taken from `compression algorithms
+            <https://asyncssh.readthedocs.io/en/latest/api.html#compressionalgs>`_, or
+            `None` to disable compression
+        **signature_algs:
+            A list of public key signature algorithms to use during the SSH
+            handshake, taken from `signature algorithms
+            <https://asyncssh.readthedocs.io/en/latest/api.html#signaturealgs>`_
+        **server_host_key_algs:
+            A list of server host key algorithms to allow during the SSH handshake,
+            taken from server host key algorithms.
+            https://asyncssh.readthedocs.io/en/latest/api.html#publickeyalgs
+
     """
     if kwargs["device_type"] not in platforms:
         raise ValueError(

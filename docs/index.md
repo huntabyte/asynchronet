@@ -1,4 +1,4 @@
-# Asynchronet (Under Construction)
+# Getting Started
 Inspired by [Netmiko](https://github.com/ktbyers/netmiko), Asynchronet is a multi-vendor library for asynchronously interacting with network devices through the CLI.
 
 Asynchronet is a fork of [Netdev](https://github.com/selfuryon/netdev), which is no longer maintained. This project was forked to continue to expand and enhance the existing capabilities while enabling community contribution.
@@ -10,15 +10,15 @@ The key features are:
 - **Autodetect Device Type**: By porting [Netmiko's](https://github.com/ktbyers/netmiko) battle-tested [SSHDetect](https://ktbyers.github.io/netmiko/docs/netmiko/ssh_autodetect.html) class to work asynchronously with _asyncssh_, asynchronet makes automatic device type detection a breeze.
 - **Simple**: Intuitive classes make it easy to interact with your favorite flavor of device.
 
-## Requirements
-Python 3.10+
-
 ## Installation
 
+### with pip <small>recommended</small> { #with-pip data-toc-label="with pip" }
 ```console
 $ pip install asynchronet
 ---> 100%
 ```
+
+## Quick Start
 
 ## Example
 

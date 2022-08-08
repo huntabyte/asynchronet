@@ -1,0 +1,23 @@
+/* Copyright (c) 2018 Sebastián Ramírez */
+
+
+.termynal-comment {
+    color: #4a968f;
+    font-style: italic;
+    display: block;
+}
+  
+.termy [data-termynal] {
+    white-space: pre-wrap;
+}
+
+
+/* Right to left languages */
+code {
+    direction: ltr;
+    display: inline-block;
+}
+  
+.md-content__inner h1 {
+    direction: ltr !important;
+}

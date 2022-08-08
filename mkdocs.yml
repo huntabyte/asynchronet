@@ -13,7 +13,7 @@ theme:
   features:
     - navigation.instant
     - navigation.tracking
-    - navigation.sections
+    - navigation.expand
     - search.suggest
     - search.highlight
     - content.tabs.link
@@ -27,7 +27,9 @@ plugins:
   - autorefs
 
 nav:
-  - Introduction: index.md
+  - Getting Started:
+    - Installation: index.md
+    - Quick Start: quick-start.md
   - Code Reference: reference.md
 
 markdown_extensions:
